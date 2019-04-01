@@ -7,6 +7,9 @@ module Fastlane
 
         destination_path = File.expand_path(params[:destination_path].shellescape)
         dirname = File.dirname(destination_path)
+        http_basic_authentication = [params[:username], params[:password]].compact
+        http_basic_authentication_enabled = http_basic_authentication.any?
+
         unless File.directory?(dirname)
           FileUtils.mkdir_p(dirname)
         end
@@ -18,7 +21,7 @@ module Fastlane
           progress = 0
           File.open(destination_path, "wb") do |saved_file|
             # the following "open" is provided by open-uri
-            open(params[:url], "rb", :content_length_proc => lambda {|t|
+            open(params[:url], "rb", http_basic_authentication: http_basic_authentication_enabled ? http_basic_authentication : nil, ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE, :content_length_proc => lambda {|t|
               if t && 0 < t
                 step = t / 10
                 partial = step
@@ -33,8 +36,8 @@ module Fastlane
                   UI.message "#{progress}%"
                   progress = (partial / step) * 10
                 end
-              end 
-              
+              end
+
             }) { |read_file|
               saved_file.write(read_file.read)
             }
@@ -62,6 +65,14 @@ module Fastlane
 
       def self.available_options
         [
+          FastlaneCore::ConfigItem.new(key: :username,
+                                       env_name: "FL_DOWNLOAD_FILE_HTTP_BASIC_AUTH_USERNAME",
+                                       description: "Username for HTTP Basic Authentication",
+                                       optional: true),
+          FastlaneCore::ConfigItem.new(key: :password,
+                                       env_name: "FL_DOWNLOAD_FILE_HTTP_BASIC_AUTH_PASSWORD",
+                                       description: "Username for HTTP Basic Authentication",
+                                       optional: true),
           FastlaneCore::ConfigItem.new(key: :url,
                                        env_name: "FL_DOWNLOAD_FILE_URL",
                                        description: "The URL that should be downloaded",
