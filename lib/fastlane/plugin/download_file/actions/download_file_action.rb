@@ -8,7 +8,7 @@ module Fastlane
         destination_path = File.expand_path(params[:destination_path].shellescape)
         dirname = File.dirname(destination_path)
         http_basic_authentication = [params[:username], params[:password]].compact
-        http_basic_authentication? = http_basic_authentication.any?
+        http_basic_authentication_enabled = http_basic_authentication.any?
 
         unless File.directory?(dirname)
           FileUtils.mkdir_p(dirname)
@@ -21,7 +21,7 @@ module Fastlane
           progress = 0
           File.open(destination_path, "wb") do |saved_file|
             # the following "open" is provided by open-uri
-            open(params[:url], "rb", http_basic_authentication: http_basic_authentication? ? http_basic_authentication : nil, :content_length_proc => lambda {|t|
+            open(params[:url], "rb", http_basic_authentication: http_basic_authentication_enabled ? http_basic_authentication : nil, :content_length_proc => lambda {|t|
               if t && 0 < t
                 step = t / 10
                 partial = step
